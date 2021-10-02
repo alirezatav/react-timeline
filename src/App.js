@@ -1,4 +1,4 @@
-import Timeline from "./lib/components/Timeline";
+import Timeline from "./dist/components/index";
 
 function App() {
   const data = [{ begin: 1000, end: 10000, text: "This is subtitle" }];

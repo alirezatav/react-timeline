@@ -34,8 +34,8 @@ export default function Timeline(props) {
 
   const drawTimeLine = (p) => {
     timeLine = TimeLine(
-      canvas1?.current,
-      canvas2?.current,
+      canvas1.current,
+      canvas2.current,
       p.data,
       p.endTime,
       () => canvasAudio.current,
@@ -51,9 +51,9 @@ export default function Timeline(props) {
     let endTime;
     if (props.data.length > 0 && props.src) {
       endTime =
-        canvasAudio.current?.duration ||
-        props.data[props.data.length - 1]?.end ||
-        3600;
+        canvasAudio.current.duration || props.data[props.data.length - 1]
+          ? props.data[props.data.length - 1].end
+          : 3600;
       if (props.data[props.data.length - 1].end > endTime) {
         endTime = props.data[props.data.length - 1].end;
         console.log("Video time is less than the alignments end time");
