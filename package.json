@@ -5,9 +5,13 @@
   "keywords": [
     "react",
     "timeline",
-    "timeline-editor"
+    "subtitle",
+    "editor",
+    "caption",
+    "react-timeline-editor"
   ],
-  "version": "0.1.5",
+  "version": "0.3.9",
+  "license": "MIT",
   "private": false,
   "main": "dist/components/index.js",
   "module": "dist/components/index.js",
@@ -24,6 +28,7 @@
     "react-dom": "^17.0.2"
   },
   "scripts": {
+    "start": "react-scripts start",
     "build": " babel src/lib --out-dir dist --copy-files"
   },
   "eslintConfig": {

@@ -4,11 +4,8 @@ Object.defineProperty(exports, "__esModule", {
   value: true,
 });
 exports.default = TimeLine;
-exports.toFixed2 = void 0;
 
 const toFixed2 = (i) => parseInt(i * 100) / 100;
-
-exports.toFixed2 = toFixed2;
 
 function TimeLine(
   canvas,
@@ -16,11 +13,11 @@ function TimeLine(
   alignments,
   endTime,
   getPlayer,
-  paddingRight,
   changeAlignment,
   changeZoomLevel,
   changeShift,
-  tellAreaChangesToRectComponent
+  tellAreaChangesToRectComponent,
+  options
 ) {
   // constants
   const LINE_HEIGHT = 40;
@@ -30,18 +27,15 @@ function TimeLine(
   const RESIZE_MODE_EDGE = 5;
   const SHIFT_SCALE = 4;
   const EXRTA_SHIFT = 60;
-  const PADDING_RIGHT = paddingRight || 0;
   const ZOOM_SCALE = 1.35;
   const MINIMUM_BLOCK_TIME = 1;
   const SCROLL_BAR_HEIGHT = 10; // colors
 
-  const SELECTED_COLOR = "#1890ff";
-  const ACTIVE_COLOR = "#7c9abd";
-  const CURSOR_ON_BOX_COLOR = "#80add6";
-  const CURSUR_TIME_CONTAINER_COLOR = "#f0523f";
+  const SELECTED_COLOR = options.colors.selectedBox;
+  const ACTIVE_COLOR = options.colors.boxHover;
+  const CURSUR_TIME_CONTAINER_COLOR = options.colors.playingBox;
   let scrolling = false;
-  let autoScroll = localStorage.autoScroll === "true";
-  let renderingPrtcls = [];
+  let autoScroll = options.autoScroll;
   let maximumShift = 10000;
   let isMouseDown = false;
 
@@ -50,7 +44,10 @@ function TimeLine(
   } // element setting
 
   let animationID;
-  let w = (canvas.width = canvas2.width = window.innerWidth - PADDING_RIGHT);
+  let w =
+    (canvas.width =
+    canvas2.width =
+      canvas.parentElement.parentElement.clientWidth);
   let h = (canvas.height = canvas2.height = TIMELINE_HEIGHT);
   let scrollPosition = 0;
   let scrollSize = w;
@@ -62,7 +59,7 @@ function TimeLine(
   ctx.textBaseline = "middle";
   ctx.font = "10px Arial";
   canvas.style.backgroundColor = "transparent";
-  canvas2.style.backgroundColor = "transparent";
+  canvas2.style.backgroundColor = options.colors.background;
   let mouse = {};
   let lastXcursor = 0;
   let mouseTime;
@@ -111,22 +108,11 @@ function TimeLine(
     this.draw = (context) => {
       context.save();
       this.x = toFixed2(this.x);
-      this.edge = toFixed2(this.edge); // background color
-
-      var grd = ctx.createLinearGradient(
-        this.x + shift,
-        this.y,
-        this.x + this.edge + shift,
-        this.y
-      );
-      grd.addColorStop(0, "#a9a9a9");
-      grd.addColorStop(1, "#bbbbbb");
+      this.edge = toFixed2(this.edge);
       context.fillStyle = ACTIVE_COLOR;
 
-      if (currentHoveredIndex === this.index) {
-        context.fillStyle = CURSOR_ON_BOX_COLOR;
-      } else {
-        context.fillStyle = grd;
+      if (currentHoveredIndex !== this.index) {
+        context.fillStyle = options.colors.box;
       }
 
       if (this.active) {
@@ -146,18 +132,20 @@ function TimeLine(
       context.closePath();
       context.stroke();
       ctx.font = "13px Arial";
-      context.fillStyle = "#212b33";
-      if (this.selected) context.fillStyle = "white"; //High usage! fittingString()
-
-      if (
-        this.edge > 20 &&
-        (currentHoveredIndex === this.index ||
-          currentPrtclsIndex === this.index)
-      )
+      context.fillStyle = options.colors.text;
+      if (this.selected) context.fillStyle = options.colors.selectedText;
+      let space = this.edge;
+      var rat = ctx.measureText(this.text).width / space;
+      let trimedText =
+        rat <= 1
+          ? this.text
+          : this.text.substr(0, Math.floor((1 / rat) * this.text.length) - 1);
+      if (trimedText && this.edge > 20)
         ctx.fillText(
-          fittingString(ctx, this.text, this.edge),
+          trimedText,
           this.x + 1 + shift,
-          this.y + 22
+          this.y + 22,
+          this.edge - 2
         );
       context.restore();
     };
@@ -189,8 +177,12 @@ function TimeLine(
   }
 
   function resize() {
-    w = canvas.width = canvas2.width = window.innerWidth - PADDING_RIGHT;
+    w =
+      canvas.width =
+      canvas2.width =
+        canvas.parentElement.parentElement.clientWidth;
     h = canvas.height = canvas2.height = TIMELINE_HEIGHT;
+    drawBG(bgCtx);
   }
 
   function changeZoom(deltaY) {
@@ -241,16 +233,18 @@ function TimeLine(
     });
     checkShift();
     changeZoomLevel(zoomLevel);
+    drawBG(bgCtx, ratio);
   }
 
   function drawTimeCursor() {
     let position = currentTime * zoomLevel + shift;
     let context = ctx;
     let pos = position !== undefined ? position : mouse ? mouse.x : undefined;
-    if (pos === undefined) return;
-    currentHoveredIndex = prtcls.findIndex(
-      (e) => pos - shift >= e.x && pos - shift <= e.x + e.edge
-    );
+    if (pos === undefined) return; //temporary deactive hover cursor
+    // currentHoveredIndex = prtcls.findIndex(
+    //   (e) => pos - shift >= e.x && pos - shift <= e.x + e.edge
+    // );
+
     context.save();
     context.fillStyle = CURSUR_TIME_CONTAINER_COLOR;
     context.fillRect(pos - 70, 21, 70, 17);
@@ -266,22 +260,6 @@ function TimeLine(
     context.restore();
   }
 
-  function activePrtcl() {
-    if (scrolling) return;
-    currentPrtclsIndex = prtcls.findIndex((e) =>
-      cursorInRect(mouse.x, mouse.y, e.x, e.y, e.edge, e.edge)
-    );
-    moveIndex = currentPrtclsIndex;
-    currentPrtcl = prtcls[currentPrtclsIndex];
-    prtcls.forEach((d, i) => {
-      if (currentPrtclsIndex !== i) {
-        d.active = false;
-      } else {
-        d.active = true;
-      }
-    });
-  }
-
   function mousemoveGeneral(e) {
     e.preventDefault();
     mouse = getMouseCoords(canvas, e);
@@ -294,8 +272,8 @@ function TimeLine(
 
     lastXcursor = mouse.x;
 
-    if (!moving && !resizing & !swaping) {
-      activePrtcl();
+    if (!moving && !resizing & !swaping && !scrolling) {
+      // activePrtcl();
       checkResizing();
       hoverElement();
     }
@@ -311,63 +289,64 @@ function TimeLine(
 
   function handleMouseMove(e) {
     e.preventDefault();
-    let min = 0;
-    let max = 99999999;
-    let leftSub = prtcls[currentPrtclsIndex - 1];
-    let rightSub = prtcls[currentPrtclsIndex + 1];
-    if (leftSub) min = leftSub.x + leftSub.edge;
-    if (rightSub) max = rightSub.x;
     handleHoverTimeBar();
     if (!currentPrtcl) visibleTooltip = false;
-
-    if (currentPrtcl) {
-      if (currentPrtcl.selected) {
-        if (resizing) {
-          handleResize(mouse);
-        } else {
-          if (isMouseDown) {
-            moving = true;
-            handlePauseInChanging();
-            let pos = mouse.x - currentPrtcl.offset.x;
-
-            if (pos + currentPrtcl.edge <= max && pos >= min) {
-              currentPrtcl.x = pos;
-              currentPrtcl.y = LINE_HEIGHT;
-            } else {
-              if (
-                movingDirection === "right" &&
-                pos > currentPrtcl.x + currentPrtcl.edge
-              )
-                currentPrtcl.x = max - currentPrtcl.edge;
-              if (movingDirection === "left" && pos < currentPrtcl.x)
-                currentPrtcl.x = min;
-            }
-          }
-        }
-      }
+    if (moving) {
+      handleMoving();
+    } else if (resizing) {
+      handleResize(mouse);
+    } else if (scrolling) {
+      handleScrolling();
     } else if (swaping) {
-      // handlePauseInChanging()
       resetActives();
       handleVerticalSwipe();
-    } else if (scrolling) {
-      let mouseDistancetToScroll = Math.abs(mouse.x - scrollPosition);
-      let distance = scrollSize / 2;
-      let ratio = (mouse.x - distance) / w;
-      let value = -1 * ratio * endTime * zoomLevel;
-      if (value <= 0) shift = value;
+    } else if (isMouseDown) {
+      moving = true;
     } else {
       resetActives();
     }
 
     checkShift();
   }
+  function handleScrolling() {
+    if (zoomLevel === minimumZoomLevel) return;
 
+    let mouseDistancetToScroll = Math.abs(mouse.x - scrollPosition);
+    let distance = scrollSize / 2;
+    let ratio = (mouse.x - distance) / w;
+    let value = -1 * ratio * endTime * zoomLevel;
+    if (value <= 0) shift = value;
+    drawBG(bgCtx);
+  }
   function resetActives() {
     prtcls.forEach((d) => {
       d.active = false;
     });
   }
+  function handleMoving() {
+    if (!currentPrtcl) return;
+    let min = 0;
+    let max = 99999999;
+    let leftSub = prtcls[currentPrtclsIndex - 1];
+    let rightSub = prtcls[currentPrtclsIndex + 1];
+    if (leftSub) min = leftSub.x + leftSub.edge;
+    if (rightSub) max = rightSub.x;
 
+    let pos = mouse.x - currentPrtcl.offset.x;
+
+    if (pos + currentPrtcl.edge <= max && pos >= min) {
+      currentPrtcl.x = pos;
+      currentPrtcl.y = LINE_HEIGHT;
+    } else {
+      if (
+        movingDirection === "right" &&
+        pos > currentPrtcl.x + currentPrtcl.edge
+      )
+        currentPrtcl.x = max - currentPrtcl.edge;
+      if (movingDirection === "left" && pos < currentPrtcl.x)
+        currentPrtcl.x = min;
+    }
+  }
   function outPrtcls() {
     let data = prtcls.map((p, i) => {
       let begin = toFixed2(p.x / zoomLevel);
@@ -389,7 +368,7 @@ function TimeLine(
   }
 
   function handleVerticalSwipe() {
-    if (swaping) {
+    if (swaping && zoomLevel !== minimumZoomLevel) {
       if (movingDirection === "left") {
         if ((w - shift) / zoomLevel > endTime + EXRTA_SHIFT) return;
         shift = shift - SHIFT_SCALE;
@@ -400,6 +379,8 @@ function TimeLine(
           shift = shift + SHIFT_SCALE;
         }
       }
+
+      drawBG(bgCtx);
     }
   }
 
@@ -434,17 +415,16 @@ function TimeLine(
   }
 
   function handleCursor() {
-    if (swaping) {
-      canvas.classList.add("grabbing");
-    } else {
-      canvas.classList.remove("grabbing");
-    }
-
-    if (currentPrtcl) {
-      canvas.classList.add("move");
-    } else {
-      canvas.classList.remove("move");
-    }
+    // if (swaping) {
+    //   canvas.classList.add("grabbing");
+    // } else {
+    //   canvas.classList.remove("grabbing");
+    // }
+    // if (currentPrtcl) {
+    //   canvas.classList.add("move");
+    // } else {
+    //   canvas.classList.remove("move");
+    // }
   }
 
   function handleMouseDown() {
@@ -490,7 +470,7 @@ function TimeLine(
 
   function handlePauseInChanging() {
     if (player) {
-      player.pause();
+      // player.pause();
     }
   }
 
@@ -577,7 +557,7 @@ function TimeLine(
     if (leftSub) min = leftSub.x + leftSub.edge + shift;
     if (rightSub) max = rightSub.x + shift;
 
-    if (currentPrtcl.selected) {
+    if (currentPrtcl?.selected) {
       if (rightResize) {
         let distanceToBegin = mouse.x - currentPrtcl.x - shift;
 
@@ -679,38 +659,16 @@ function TimeLine(
     return prtcls;
   }
 
-  function fittingString(c, str, maxWidth) {
-    var ellipsis = "…";
-    if (maxWidth < 10) ellipsis = "";
-    if (maxWidth < 5) return "";
-    var width = c.measureText(str).width;
-    var ellipsisWidth = c.measureText(ellipsis).width;
-
-    if (width <= maxWidth || width <= ellipsisWidth) {
-      return str;
-    } else {
-      if (!str) return;
-      var len = str.length;
-
-      while (width >= maxWidth - ellipsisWidth && len-- > 0) {
-        str = str.substring(0, len);
-        width = c.measureText(str).width;
-      }
-
-      return str + ellipsis;
-    }
-  }
-
   function showTooltip() {
     if (currentPrtcl) {
       ctx.save();
       ctx.translate(mouse.x + 10, mouse.y - 10);
-      ctx.fillStyle = "#474e54";
+      ctx.fillStyle = options.colors.tooltipBackground;
       ctx.font = "12px Arial";
       let width = ctx.measureText(currentPrtcl.text).width;
       let height = 20;
       ctx.fillRect(5 + width / -2, -22, width + 20, height);
-      ctx.fillStyle = "white";
+      ctx.fillStyle = options.colors.tooltipText;
       ctx.fillText(currentPrtcl.text, 15 + width / -2, -12);
       ctx.restore();
     }
@@ -755,9 +713,16 @@ function TimeLine(
     }
 
     checkShift();
+    drawBG(bgCtx);
   }
 
   function drawBG(context, r = 1) {
+    let rat = 5;
+    if (zoomLevel > 50) rat = 10;
+    if (zoomLevel > 100) rat = 15;
+    if (zoomLevel > 150) rat = 20;
+    if (zoomLevel > 200) rat = 25;
+
     globalRatio = globalRatio * r;
     context.save();
     context.clearRect(0, 0, canvas2.width, canvas2.height);
@@ -765,41 +730,62 @@ function TimeLine(
     context.fillRect(0, 0, w, h);
     context.lineWidth = 0.3;
     context.strokeStyle = "lightgrey";
-    context.fillStyle = "black"; // vertical grid
+    context.fillStyle = "grey"; // vertical grid
 
     drawVerticalGrid(context);
     context.lineWidth = 0.5;
-    context.strokeStyle = "gray"; //X-Axis
+    context.strokeStyle = "grey"; //X-Axis
 
     drawXaxis(context);
 
     function drawVerticalGrid(ctx) {
-      for (let i = 1; i < w; i++) {
-        ctx.beginPath();
+      let initNumber = shift % zoomLevel;
 
-        if (i % 10 === 0) {
+      for (let i = initNumber; i < w; i += zoomLevel / rat) {
+        if (i > 0) {
+          ctx.beginPath();
           ctx.moveTo(i, 0);
           ctx.lineTo(i, h);
           ctx.moveTo(i, 0);
-        }
 
-        ctx.closePath();
-        ctx.stroke();
+          ctx.closePath();
+          ctx.stroke();
+        }
       }
     }
 
     function drawXaxis(ctx) {
       ctx.beginPath();
-
-      for (let i = 0; i < w; i += 5) {
-        if (i % 50 === 0) {
+      let counter = 0;
+      let initNumber = shift % zoomLevel;
+      for (let i = initNumber; i < w; i += zoomLevel / rat) {
+        if (counter % rat === 0) {
           ctx.moveTo(i, 0);
           ctx.lineTo(i, 30);
-          ctx.fillText(` ${toTime((i - shift) / zoomLevel)}`, i, 30);
+          context.fillStyle = "grey";
+          if (zoomLevel > 50) {
+            ctx.fillText(
+              ` ${toTime((i - shift) / zoomLevel)}`,
+              i,
+              30,
+              zoomLevel - 2
+            );
+          } else {
+            // let viewPortTime = endTimeShow - beginingTimeShow;
+            ctx.fillText(
+              ` ${new Date(((i - shift) / zoomLevel) * 1000)
+                .toISOString()
+                .substr(endTime > 7000 ? 11 : 14, 5)}`,
+              i,
+              30,
+              zoomLevel - 2
+            );
+          }
         } else {
           ctx.moveTo(i, 0);
           ctx.lineTo(i, 10);
         }
+        counter++;
       }
 
       ctx.closePath();
@@ -808,7 +794,12 @@ function TimeLine(
   }
 
   function handleClick(e) {
-    scrolling = cursorInScrollBar() && isMouseDown;
+    scrolling =
+      cursorInScrollBar() &&
+      isMouseDown &&
+      !resizing &&
+      !moving &&
+      !resizing & !swaping;
   }
 
   function cursorInScrollBar() {
@@ -820,7 +811,7 @@ function TimeLine(
     ) {
       return true;
     } else {
-      if (scrolling) return true;
+      if (scrolling && !resizing && !swaping) return true;
     }
 
     return false;
@@ -832,7 +823,7 @@ function TimeLine(
 
   function drawScroll() {
     let cursorInScroll = cursorInScrollBar();
-    scrolling = cursorInScroll && isMouseDown;
+    scrolling = cursorInScroll && isMouseDown && !resizing;
 
     if (cursorInScroll || scrolling) {
       canvas.classList.add("e-resize");
@@ -842,9 +833,12 @@ function TimeLine(
 
     let context = ctx;
     context.save();
-    context.fillStyle = "#e8e8e8";
+    context.fillStyle = options.colors.scrollBarBackground;
     context.fillRect(0, TIMELINE_HEIGHT - 10, w, 10);
-    context.fillStyle = cursorInScroll || scrolling ? "#2a74e2" : "#9ba4a9";
+    context.fillStyle =
+      cursorInScroll || scrolling
+        ? options.colors.scrollBarHover
+        : options.colors.scrollBar;
     let d = endTimeShow - beginingTimeShow;
     let rat = d / endTime;
     scrollSize = w * rat;
@@ -870,12 +864,12 @@ function TimeLine(
     canvas.addEventListener("mousemove", mousemoveGeneral);
     canvas.removeEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mousemove", handleMouseMove);
-    canvas.removeEventListener("mouseup", mouseup);
-    canvas.addEventListener("mouseup", mouseup);
+    window.removeEventListener("mouseup", mouseup);
+    window.addEventListener("mouseup", mouseup);
     canvas.removeEventListener("mousedown", handleMouseDown);
-    canvas.addEventListener("mousedown", handleMouseDown); // canvas.removeEventListener("dblclick", handleDbClick);
-    // canvas.addEventListener("dblclick", handleDbClick);
-
+    canvas.addEventListener("mousedown", handleMouseDown);
+    canvas.removeEventListener("dblclick", handleDbClick);
+    canvas.addEventListener("dblclick", handleDbClick);
     window.removeEventListener("changeAutoScroll", changeAutoScroll);
     window.addEventListener("changeAutoScroll", changeAutoScroll);
     canvas.removeEventListener("click", handleClick);
@@ -909,7 +903,26 @@ function TimeLine(
 
     ctx.clearRect(0, 0, w, ctx.canvas.height); //draw boxes
 
-    renderingPrtcls = prtcls.filter((e) => {
+    if (!moving) currentPrtclsIndex = -1;
+    currentHoveredIndex = -1;
+    prtcls.filter((e, i) => {
+      let isHoveredPrtcl = cursorInRect(
+        mouse.x,
+        mouse.y,
+        e.x,
+        e.y,
+        e.edge,
+        e.edge
+      );
+      let position = currentTime * zoomLevel + shift; //player on box
+
+      if (position - shift >= e.x && position - shift <= e.x + e.edge) {
+        currentHoveredIndex = i;
+      } //mouse on box
+
+      if (isHoveredPrtcl && !resizing && !moving) currentPrtclsIndex = i;
+      e.active = !!isHoveredPrtcl; //check prtcls is in viewport
+
       let condition =
         (e.x >= -1 * shift && e.x + e.edge < -1 * shift + w) ||
         (e.x + e.edge > -1 * shift && e.x < -1 * shift + w);
@@ -919,7 +932,12 @@ function TimeLine(
       }
 
       return condition;
-    }); //tooltip
+    });
+
+    if (!resizing && !moving) {
+      moveIndex = currentPrtclsIndex;
+      currentPrtcl = prtcls[currentPrtclsIndex];
+    }
 
     if (beginingTimeShow > endTime) shift = endTime - beginingTimeShow; //red cursor time
 
@@ -932,7 +950,6 @@ function TimeLine(
     }
 
     handleCursor();
-    drawBG(bgCtx);
     animationID = window.requestAnimationFrame(animate);
   }
 

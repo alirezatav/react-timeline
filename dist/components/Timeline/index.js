@@ -89,18 +89,96 @@ function Timeline(props) {
     endTimeShow = e;
   };
 
+  let defaultFunction = () => {};
+
   const drawTimeLine = (p) => {
+    var _props$colors,
+      _props$colors2,
+      _props$colors3,
+      _props$colors4,
+      _props$colors5,
+      _props$colors6,
+      _props$colors7,
+      _props$colors8,
+      _props$colors9,
+      _props$colors10,
+      _props$colors11,
+      _props$colors12;
+
     timeLine = (0, _T.default)(
       canvas1.current,
       canvas2.current,
       p.data,
       p.endTime,
-      () => canvasAudio.current,
-      props.paddingRight,
-      changeAlignment,
-      changeZoomLevel,
-      changeShift,
-      changeAreaShow
+      () => (props.audioRef ? props.audioRef.current : canvasAudio.current),
+      changeAlignment || defaultFunction,
+      changeZoomLevel || defaultFunction,
+      changeShift || defaultFunction,
+      changeAreaShow || defaultFunction,
+      {
+        autoScroll: props.autoScroll,
+        colors: {
+          background:
+            ((_props$colors = props.colors) === null || _props$colors === void 0
+              ? void 0
+              : _props$colors.background) || "transparent",
+          box:
+            ((_props$colors2 = props.colors) === null ||
+            _props$colors2 === void 0
+              ? void 0
+              : _props$colors2.box) || "#a9a9a9",
+          boxHover:
+            ((_props$colors3 = props.colors) === null ||
+            _props$colors3 === void 0
+              ? void 0
+              : _props$colors3.boxHover) || "#80add6",
+          selectedBox:
+            ((_props$colors4 = props.colors) === null ||
+            _props$colors4 === void 0
+              ? void 0
+              : _props$colors4.selectedBox) || "#1890ff",
+          playingBox:
+            ((_props$colors5 = props.colors) === null ||
+            _props$colors5 === void 0
+              ? void 0
+              : _props$colors5.playingBox) || "#f0523f",
+          text:
+            ((_props$colors6 = props.colors) === null ||
+            _props$colors6 === void 0
+              ? void 0
+              : _props$colors6.text) || "#212b33",
+          selectedText:
+            ((_props$colors7 = props.colors) === null ||
+            _props$colors7 === void 0
+              ? void 0
+              : _props$colors7.selectedText) || "white",
+          tooltipBackground:
+            ((_props$colors8 = props.colors) === null ||
+            _props$colors8 === void 0
+              ? void 0
+              : _props$colors8.tooltipBackground) || "#474e54",
+          tooltipText:
+            ((_props$colors9 = props.colors) === null ||
+            _props$colors9 === void 0
+              ? void 0
+              : _props$colors9.tooltipText) || "white",
+          scrollBarBackground:
+            ((_props$colors10 = props.colors) === null ||
+            _props$colors10 === void 0
+              ? void 0
+              : _props$colors10.scrollBarBackground) || "#f1f3f9",
+          scrollBar:
+            ((_props$colors11 = props.colors) === null ||
+            _props$colors11 === void 0
+              ? void 0
+              : _props$colors11.scrollBar) || "#c2c9d6",
+          scrollBarHover:
+            ((_props$colors12 = props.colors) === null ||
+            _props$colors12 === void 0
+              ? void 0
+              : _props$colors12.scrollBarHover) || "#8f96a3",
+        },
+      }
     );
   };
 
@@ -108,10 +186,9 @@ function Timeline(props) {
     let endTime;
 
     if (props.data.length > 0 && props.src) {
-      endTime =
-        canvasAudio.current.duration || props.data[props.data.length - 1]
-          ? props.data[props.data.length - 1].end
-          : 3600;
+      endTime = props.data[props.data.length - 1]
+        ? props.data[props.data.length - 1].end * 1.2
+        : 60;
 
       if (props.data[props.data.length - 1].end > endTime) {
         endTime = props.data[props.data.length - 1].end;
@@ -142,7 +219,7 @@ function Timeline(props) {
       },
       /*#__PURE__*/ _react.default.createElement("audio", {
         src: props.src,
-        ref: canvasAudio,
+        ref: props.audioRef || canvasAudio,
       })
     ),
     /*#__PURE__*/ _react.default.createElement(

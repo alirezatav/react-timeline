@@ -4,15 +4,13 @@ React Timeline adjustment
 
 # Install
 
-Just add it to your project:
-
 ```
 npm i react-timeline-editor
 ```
 
 # Demo
 
-[click to see demo]()
+[see](https://codesandbox.io/s/vibrant-yalow-2og1l)
 
 # Usage
 
@@ -20,21 +18,42 @@ npm i react-timeline-editor
 import React from "react";
 import Timeline from "react-timeline-editor";
 
-const data = [{ begin: 1000, end: 3000, text: "This is subtitle" }];
+function App() {
+  const audioRef = useRef(); //access audio/video element.
+  const data = [{ begin: 25, end: 35, text: "This is subtitle" }];
 
-ReactDOM.render(
-  <Timeline
-    paddingLeft={10}
-    paddingRight={10}
-    changeAreaShow={() => {}}
-    changeZoomLevel={() => {}}
-    changeShift={() => {}}
-    setAligns={() => {}}
-    src={"..."}
-    data={data}
-  />,
-  document.getElementById("root")
-);
+  return (
+    <div>
+      <button onClick={() => audioRef.current.play()}>play</button>
+      <button onClick={() => audioRef.current.pause()}>pause</button>
+
+      <Timelines
+        changeAreaShow={(start, end) => {}}
+        changeZoomLevel={(zoomLevel) => {}}
+        changeShift={(shift) => {}}
+        setAligns={(alignments) => {}}
+        audioRef={audioRef}
+        src={"..."}
+        data={data}
+        autoScroll
+        colors={{
+          background: "transparent",
+          box: "#a9a9a9",
+          boxHover: "#80add6",
+          selectedBox: "#1890ff",
+          playingBox: "#f0523f",
+          text: "#212b33",
+          selectedText: "white",
+          tooltipBackground: "#474e54",
+          tooltipText: "white",
+          scrollBarBackground: "#f1f3f9",
+          scrollBar: "#c2c9d6",
+          scrollBarHover: "#8f96a3",
+        }}
+      />
+    </div>
+  );
+}
 ```
 
 ## Props
@@ -45,12 +64,14 @@ ReactDOM.render(
 | paddingRight    | Number                                         | padding right.                                  |
 | data            | [{ begin: Number, end: Number, text: String }] | Alignments data (begin and end unit is second). |
 | src             | String                                         | Video or audio source.                          |
+| audioRef        | React.RefObject                                | Video or audio ref.                             |
 | changeAreaShow  | Function                                       | Callback when viewport changed.                 |
-| changeZoomLevel | Function                                       | Callback when zoom level changed                |
+| changeZoomLevel | Function                                       | Callback when zoom level changed.               |
 | changeShift     | Function                                       | Callback when shift changed.                    |
-| setAligns       | Function                                       | Callback when data times changed                |
+| setAligns       | Function                                       | Callback when data times changed.               |
+| colors          | Object                                         | Colors object (see example).                    |
 
-Others props will be ready.
+Others props will be ready soon.
 
 # Contributing
 
