@@ -306,7 +306,8 @@ function TimeLine(
       resetActives();
     }
 
-    checkShift();
+    if (moving || scrolling || swaping) checkShift();
+    drawBG(bgCtx);
   }
   function handleScrolling() {
     if (zoomLevel === minimumZoomLevel) return;

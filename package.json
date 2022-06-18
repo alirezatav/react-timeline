@@ -20,7 +20,7 @@
     "time",
     "edit",
     "media",
-    "shift",
+    "edit subtitle",
     "adjuster",
     "react-subtitle-editor"
   ],
@@ -38,8 +38,7 @@
     "url": "git+https://github.com/alirezatav/react-timeline"
   },
   "dependencies": {
-    "react": "^17.0.2",
-    "react-subtitle-editor": "^0.0.2"
+    "react": "^18.2.0"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -62,5 +61,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "babel": "^6.23.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "^5.0.1"
   }
 }
