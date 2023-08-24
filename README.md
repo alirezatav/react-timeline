@@ -20,7 +20,7 @@ npm i react-subtitle-editor
   
 
 # Try it
-![enter image description here](https://im7.ezgif.com/tmp/ezgif-7-91e8964c1870.gif)
+
 [Demo](https://codesandbox.io/s/vibrant-yalow-2og1l)
 
   
